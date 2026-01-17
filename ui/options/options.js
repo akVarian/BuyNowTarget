@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const scheduledLoginTimes = document.getElementById("scheduled-login-times");
   const scheduledLoginDaily = document.getElementById("scheduled-login-daily");
   const randomLoginEnabled = document.getElementById("random-login-enabled");
+  const intervalLoginEnabled = document.getElementById("interval-login-enabled");
+  const intervalLoginMinutes = document.getElementById("interval-login-minutes");
+  const testLoginBtn = document.getElementById("test-login-btn");
   const nextLoginDisplay = document.getElementById("next-login-display");
   const tabs = document.querySelectorAll(".tab");
   const _0x49a23c = document.querySelectorAll(".tab-content");
@@ -105,6 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
   _0x1ea2e6.addEventListener("input", _0x5c5224);
   _0x3e5f5b.addEventListener("input", _0x5c5224);
   _0x4e9710.addEventListener("click", _0x10e108);
+  testLoginBtn.addEventListener("click", _0x4d8f2a);
   async function _0x2dc50e() {
     _0x2df151.innerHTML = "<li class=\"empty-state\">Loading profiles...</li>";
     try {
@@ -333,6 +337,8 @@ document.addEventListener("DOMContentLoaded", function () {
       scheduledLoginTimes.value = scheduledLoginData.times || "02:45";
       scheduledLoginDaily.checked = scheduledLoginData.daily || false;
       randomLoginEnabled.checked = scheduledLoginData.randomHourly || false;
+      intervalLoginEnabled.checked = scheduledLoginData.intervalEnabled || false;
+      intervalLoginMinutes.value = scheduledLoginData.intervalMinutes || 60;
       updateNextLoginDisplay(scheduledLoginData);
     } catch (_0x4ac397) {
       console.error("Error loading global settings:", _0x4ac397);
@@ -355,11 +361,20 @@ document.addEventListener("DOMContentLoaded", function () {
         _0x487e55("SKU cooldown must be between 1 and 3600 seconds.");
         return;
       }
+      
+      const intervalMinutesValue = parseInt(intervalLoginMinutes.value, 10);
+      if (intervalLoginEnabled.checked && (isNaN(intervalMinutesValue) || intervalMinutesValue < 1 || intervalMinutesValue > 1440)) {
+        _0x487e55("Interval login minutes must be between 1 and 1440.");
+        return;
+      }
+      
       const scheduledLoginData = {
         enabled: scheduledLoginEnabled.checked,
         times: scheduledLoginTimes.value,
         daily: scheduledLoginDaily.checked,
-        randomHourly: randomLoginEnabled.checked
+        randomHourly: randomLoginEnabled.checked,
+        intervalEnabled: intervalLoginEnabled.checked,
+        intervalMinutes: intervalLoginEnabled.checked ? intervalMinutesValue : 0
       };
       const _0x1de5e9 = {
         globalSettings: _0x2da1e2,
@@ -634,6 +649,29 @@ document.addEventListener("DOMContentLoaded", function () {
       _0x487e55("Error clearing Target credentials");
     }
   }
+  
+  async function _0x4d8f2a() {
+    try {
+      console.log("Test login button clicked");
+      _0x484f87("Opening Target.com/account for login test...");
+      
+      // Send message to background script to trigger login
+      chrome.runtime.sendMessage({ action: 'testLogin' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error sending test login message:", chrome.runtime.lastError);
+          _0x487e55("Error triggering test login: " + chrome.runtime.lastError.message);
+        } else if (response && response.success) {
+          _0x484f87("Test login initiated! Check the new tab.");
+        } else {
+          _0x487e55("Test login failed: " + (response?.error || "Unknown error"));
+        }
+      });
+    } catch (error) {
+      console.error("Error in test login:", error);
+      _0x487e55("Error triggering test login: " + error.message);
+    }
+  }
+  
   function _0x3226fb(_0x20cfcc) {
     if (!_0x20cfcc) {
       return "";
@@ -641,7 +679,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return _0x20cfcc.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function updateNextLoginDisplay(scheduledLoginData) {
-    if (!scheduledLoginData || (!scheduledLoginData.enabled && !scheduledLoginData.randomHourly)) {
+    if (!scheduledLoginData || (!scheduledLoginData.enabled && !scheduledLoginData.randomHourly && !scheduledLoginData.intervalEnabled)) {
       nextLoginDisplay.textContent = "Not scheduled";
       nextLoginDisplay.style.color = "#666";
       return;
@@ -696,6 +734,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }));
       }
       displayText.push((displayText.length > 0 ? " | " : "") + "Random hourly: " + randomTimes.join(", "));
+    }
+    
+    if (scheduledLoginData.intervalEnabled && scheduledLoginData.intervalMinutes > 0) {
+      displayText.push((displayText.length > 0 ? " | " : "") + "Every " + scheduledLoginData.intervalMinutes + " minutes");
     }
     
     nextLoginDisplay.textContent = displayText.join('');

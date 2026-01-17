@@ -575,12 +575,12 @@ async function scheduleLogin(scheduledLoginData) {
     // Clear any existing alarms
     const existingAlarms = await chrome.alarms.getAll();
     for (const alarm of existingAlarms) {
-      if (alarm.name.startsWith('scheduledLogin') || alarm.name === 'randomHourlyLogin') {
+      if (alarm.name.startsWith('scheduledLogin') || alarm.name === 'randomHourlyLogin' || alarm.name === 'intervalLogin') {
         await chrome.alarms.clear(alarm.name);
       }
     }
 
-    if (!scheduledLoginData || (!scheduledLoginData.enabled && !scheduledLoginData.randomHourly)) {
+    if (!scheduledLoginData || (!scheduledLoginData.enabled && !scheduledLoginData.randomHourly && !scheduledLoginData.intervalEnabled)) {
       console.log('Scheduled Login: All logins disabled or not configured');
       return;
     }
@@ -625,6 +625,11 @@ async function scheduleLogin(scheduledLoginData) {
     if (scheduledLoginData.randomHourly) {
       scheduleNextRandomLogin();
     }
+    
+    // Handle interval-based login
+    if (scheduledLoginData.intervalMinutes && scheduledLoginData.intervalMinutes > 0) {
+      scheduleNextIntervalLogin(scheduledLoginData.intervalMinutes);
+    }
   } catch (error) {
     console.error('Scheduled Login: Error scheduling:', error);
   }
@@ -653,6 +658,21 @@ function scheduleNextRandomLogin() {
   }
 }
 
+function scheduleNextIntervalLogin(intervalMinutes) {
+  try {
+    const now = new Date();
+    const nextLogin = new Date(now.getTime() + intervalMinutes * 60 * 1000);
+    
+    chrome.alarms.create('intervalLogin', {
+      when: nextLogin.getTime()
+    });
+    
+    console.log(`Interval Login: Scheduled for ${nextLogin.toLocaleString()} (every ${intervalMinutes} minutes)`);
+  } catch (error) {
+    console.error('Interval Login: Error scheduling:', error);
+  }
+}
+
 async function performScheduledLogin() {
   try {
     console.log('Scheduled Login: Executing pre-emptive login...');
@@ -675,7 +695,7 @@ async function performScheduledLogin() {
 
     // Open Target login page in new tab
     const tab = await tabsCreate({
-      url: 'https://www.target.com/account/signin',
+      url: 'https://www.target.com/account',
       active: false // Don't focus the tab
     });
 
@@ -723,6 +743,15 @@ if (chrome.alarms) {
       if (result.scheduledLogin && result.scheduledLogin.randomHourly) {
         scheduleNextRandomLogin();
       }
+    } else if (alarm.name === 'intervalLogin') {
+      console.log('Interval Login: Alarm triggered');
+      await performScheduledLogin();
+      
+      // Schedule the next interval login
+      const result = await storageLocalGet(['scheduledLogin']);
+      if (result.scheduledLogin && result.scheduledLogin.intervalMinutes > 0) {
+        scheduleNextIntervalLogin(result.scheduledLogin.intervalMinutes);
+      }
     }
   });
 } else {
@@ -736,6 +765,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     scheduleLogin(message.scheduledLogin);
     sendResponse({ success: true });
     return false;
+  }
+  
+  if (message.action === 'testLogin') {
+    console.log('Test Login: Received manual test request');
+    performScheduledLogin().then(() => {
+      sendResponse({ success: true });
+    }).catch((error) => {
+      console.error('Test Login: Error:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true; // keep response channel open
   }
 });
 
