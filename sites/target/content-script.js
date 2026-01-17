@@ -2100,26 +2100,53 @@ if (window.location.pathname === "/cart") {
           console.log(`Login flow detection: Step1=${isStep1}, Step2=${isStep2}`);
           
           if (isStep1) {
-            // STEP 1: Enter email and click continue
-            console.log("Step 1: Entering email and clicking continue");
-            utils.updateStatus("Entering email...", "status-running");
+            // STEP 1: Check "Keep me signed in" checkbox, enter email, then click continue
+            console.log("Step 1: Checking 'Keep me signed in', entering email, and clicking continue");
+            utils.updateStatus("Preparing login...", "status-running");
             
-            // Check "Keep me signed in" checkbox if present
-            const keepSignedInCheckbox = document.querySelector('input[type="checkbox"]');
-            if (keepSignedInCheckbox) {
-              console.log("Checking 'Keep me signed in' checkbox (CRITICAL for session persistence)");
-              keepSignedInCheckbox.checked = true;
-              keepSignedInCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
-              keepSignedInCheckbox.dispatchEvent(new Event("click", { bubbles: true }));
-              await utils.sleep(100);
+            // Check "Keep me signed in" checkbox if present (using proper selectors)
+            const keepSignedInCheckbox = finder.findElementWithSelectors(selectors.loginPageSelectors.loginFields.keepMeSignedIn);
+            if (keepSignedInCheckbox && finder.isElementVisible(keepSignedInCheckbox)) {
+              if (!keepSignedInCheckbox.checked) {
+                console.log("Checking 'Keep me signed in' checkbox (CRITICAL for session persistence)");
+                keepSignedInCheckbox.checked = true;
+                keepSignedInCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+                keepSignedInCheckbox.dispatchEvent(new Event("click", { bubbles: true }));
+                await utils.sleep(100);
+                
+                // Verify checkbox was checked
+                if (keepSignedInCheckbox.checked) {
+                  console.log("✓ Keep me signed in checkbox successfully checked");
+                } else {
+                  console.warn("✗ Keep me signed in checkbox failed to check - retrying...");
+                  await utils.clickElement(keepSignedInCheckbox, "keep-signed-in-retry");
+                  await utils.sleep(50);
+                }
+              } else {
+                console.log("✓ Keep me signed in checkbox already checked");
+              }
+            } else {
+              console.warn("Keep me signed in checkbox not found in Step 1 - session may not persist");
             }
             
             // Fill email
+            console.log("Filling email field in Step 1");
+            utils.updateStatus("Entering email...", "status-running");
             await utils.fillField(emailField, _0x24b902, "login-email-step1");
             await utils.sleep(200);
             
+            // Verify email was filled
+            if (emailField.value.trim() === _0x24b902) {
+              console.log("✓ Email field successfully filled with: " + _0x24b902);
+            } else {
+              console.warn("Email field verification failed, retrying...");
+              await utils.fillField(emailField, _0x24b902, "login-email-step1-retry");
+              await utils.sleep(100);
+            }
+            
             // Click continue
-            console.log("Clicking continue button");
+            console.log("Clicking continue button to proceed to password entry");
+            utils.updateStatus("Clicking continue...", "status-running");
             await utils.clickElement(continueButton, "login-continue");
             utils.updateStatus("Waiting for password field...", "status-running");
             
