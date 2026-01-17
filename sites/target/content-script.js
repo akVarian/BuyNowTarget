@@ -2121,6 +2121,13 @@ if (window.location.pathname === "/cart") {
                   console.warn("✗ Keep me signed in checkbox failed to check - retrying...");
                   await utils.clickElement(keepSignedInCheckbox, "keep-signed-in-retry");
                   await utils.sleep(50);
+                  
+                  // Verify retry was successful
+                  if (keepSignedInCheckbox.checked) {
+                    console.log("✓ Keep me signed in checkbox checked after retry");
+                  } else {
+                    console.error("✗ Keep me signed in checkbox failed after retry - session may not persist");
+                  }
                 }
               } else {
                 console.log("✓ Keep me signed in checkbox already checked");
