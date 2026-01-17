@@ -279,7 +279,7 @@ if (window.location.pathname === "/cart") {
             _0x1e590f = "checkout";
           } else if (window.location.pathname === "/cart") {
             _0x1e590f = "cart";
-          } else if (_0x4a5560.includes("/account/signin") || _0x4a5560.includes("/login") || document.querySelector("form[name=\"login\"]") || document.querySelector("#username") || document.querySelector("#password")) {
+          } else if (_0x4a5560.includes("/account/signin") || _0x4a5560.includes("/account") || _0x4a5560.includes("/login") || document.querySelector("form[name=\"login\"]") || document.querySelector("#username") || document.querySelector("#password")) {
             _0x1e590f = "login";
           }
           console.log("Detected Target page type: " + _0x1e590f + " for URL: " + _0x4a5560);
@@ -2065,27 +2065,159 @@ if (window.location.pathname === "/cart") {
           }
           console.log("Auto-login enabled and credentials found, proceeding with login");
           utils.updateStatus("Auto-logging in to Target...", "status-running");
-          await utils.sleep(100);
+          await utils.sleep(500);
+          
+          // Check if already logged in
           const _0x1d4381 = finder.findElementWithSelectors(selectors.loginPageSelectors.loggedInIndicators);
           if (_0x1d4381 && finder.isElementVisible(_0x1d4381)) {
             console.log("Already logged in, skipping auto-login");
             utils.updateStatus("Already logged in to Target", "status-waiting");
             return;
           }
+          
+          // NEW: Handle two-step Target.com login flow
+          // Step 1: Check if on account page with "Sign in or create account" prompt
+          console.log("Checking for Target.com account page login flow...");
+          
+          // Look for email field first
+          const emailField = document.querySelector('#username') || 
+                             document.querySelector('input[type="email"]') || 
+                             document.querySelector('input[name="username"]');
+          
+          // Look for continue button (Step 1)
+          const continueButton = Array.from(document.querySelectorAll('button')).find(btn => 
+            btn.textContent.includes('Sign in') || btn.textContent.includes('Continue')
+          );
+          
+          // Look for password field
+          const passwordField = document.querySelector('#password') || 
+                                document.querySelector('input[type="password"]');
+          
+          // Determine which step we're on
+          const isStep1 = emailField && continueButton && !passwordField;
+          const isStep2 = passwordField && emailField;
+          
+          console.log(`Login flow detection: Step1=${isStep1}, Step2=${isStep2}`);
+          
+          if (isStep1) {
+            // STEP 1: Enter email and click continue
+            console.log("Step 1: Entering email and clicking continue");
+            utils.updateStatus("Entering email...", "status-running");
+            
+            // Check "Keep me signed in" checkbox if present
+            const keepSignedInCheckbox = document.querySelector('input[type="checkbox"]');
+            if (keepSignedInCheckbox) {
+              console.log("Checking 'Keep me signed in' checkbox (CRITICAL for session persistence)");
+              keepSignedInCheckbox.checked = true;
+              keepSignedInCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+              keepSignedInCheckbox.dispatchEvent(new Event("click", { bubbles: true }));
+              await utils.sleep(100);
+            }
+            
+            // Fill email
+            await utils.fillField(emailField, _0x24b902, "login-email-step1");
+            await utils.sleep(200);
+            
+            // Click continue
+            console.log("Clicking continue button");
+            await utils.clickElement(continueButton, "login-continue");
+            utils.updateStatus("Waiting for password field...", "status-running");
+            
+            // Wait for password field to appear
+            let waitAttempts = 0;
+            const maxWaitAttempts = 20;
+            while (waitAttempts < maxWaitAttempts) {
+              await utils.sleep(300);
+              const pwField = document.querySelector('#password') || document.querySelector('input[type="password"]');
+              if (pwField && finder.isElementVisible(pwField)) {
+                console.log("Password field appeared, proceeding to Step 2");
+                // Recursively call this function to handle Step 2
+                await utils.sleep(300);
+                await _0x4fb218();
+                return;
+              }
+              waitAttempts++;
+            }
+            
+            console.log("Password field did not appear after clicking continue");
+            utils.updateStatus("Password field not found", "status-waiting");
+            return;
+          }
+          
+          if (isStep2) {
+            // STEP 2: Enter password and click "Sign in with password"
+            console.log("Step 2: Entering password and signing in");
+            utils.updateStatus("Entering password...", "status-running");
+            
+            // Fill password
+            await utils.fillField(passwordField, _0x559c08, "login-password-step2");
+            await utils.sleep(200);
+            
+            // Look for "Sign in with password" button
+            const signInButton = Array.from(document.querySelectorAll('button')).find(btn => 
+              btn.textContent.includes('Sign in with password') || 
+              btn.textContent.includes('Sign in')
+            ) || document.querySelector('button[type="submit"]');
+            
+            if (signInButton && finder.isElementVisible(signInButton) && !finder.isElementDisabled(signInButton)) {
+              console.log("Clicking 'Sign in with password' button");
+              utils.updateStatus("Signing in...", "status-running");
+              await utils.clickElement(signInButton, "login-submit-step2");
+              await utils.sleep(500);
+              
+              // Check for errors
+              const errorElement = document.querySelector('[data-test="authAlertDisplay"]') ||
+                                   document.querySelector('.error') ||
+                                   document.querySelector('[role="alert"]');
+              if (errorElement && finder.isElementVisible(errorElement)) {
+                const errorText = errorElement.textContent.trim();
+                console.log("Login error detected:", errorText);
+                utils.updateStatus("Login failed: " + errorText, "status-waiting");
+                return;
+              }
+              
+              // Wait and verify login success
+              await utils.sleep(1000);
+              const loggedInIndicator = finder.findElementWithSelectors(selectors.loginPageSelectors.loggedInIndicators);
+              if (loggedInIndicator && finder.isElementVisible(loggedInIndicator)) {
+                console.log("Auto-login successful!");
+                utils.updateStatus("Successfully logged in to Target", "status-complete");
+              } else {
+                // Check if we're redirected away from login page
+                if (!window.location.href.includes('/account') && !window.location.href.includes('/login')) {
+                  console.log("Redirected away from login page - assuming success");
+                  utils.updateStatus("Login completed", "status-complete");
+                } else {
+                  console.log("Login submitted but success not confirmed");
+                  utils.updateStatus("Login submitted (verifying...)", "status-waiting");
+                }
+              }
+            } else {
+              console.log("Sign in button not available");
+              utils.updateStatus("Sign in button not available", "status-waiting");
+            }
+            return;
+          }
+          
+          // FALLBACK: Try old single-step login flow
+          console.log("Attempting fallback to single-step login flow");
           const _0x4fc1eb = finder.findElementWithSelectors(selectors.loginPageSelectors.loginFields.username);
           const _0xc37d34 = finder.findElementWithSelectors(selectors.loginPageSelectors.loginFields.password);
           const _0x582543 = finder.findElementWithSelectors(selectors.loginPageSelectors.signInButton);
+          
           if (!_0x4fc1eb || !_0xc37d34 || !_0x582543) {
-            console.log("Could not find all required login form elements");
+            console.log("Could not find login form elements for any login flow");
             utils.updateStatus("Login form not found", "status-waiting");
             return;
           }
+          
           console.log("Filling username/email field");
           await utils.fillField(_0x4fc1eb, _0x24b902, "login-username");
           await utils.sleep(50);
           console.log("Filling password field");
           await utils.fillField(_0xc37d34, _0x559c08, "login-password");
           await utils.sleep(50);
+          
           const _0x59202b = finder.findElementWithSelectors(selectors.loginPageSelectors.loginFields.keepMeSignedIn);
           if (_0x59202b && finder.isElementVisible(_0x59202b)) {
             if (!_0x59202b.checked) {
@@ -2111,6 +2243,7 @@ if (window.location.pathname === "/cart") {
           } else {
             console.warn("Keep me signed in checkbox not found - session may not persist");
           }
+          
           if (finder.isElementVisible(_0x582543) && !finder.isElementDisabled(_0x582543)) {
             console.log("Clicking sign in button");
             utils.updateStatus("Signing in...", "status-running");
