@@ -1,0 +1,1 @@
+console.log("[Site Monitor] Module loaded.");

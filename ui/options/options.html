@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Polar Assist Bot v3.5 Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header>
+    <h1>Polar Assist Bot v3.5 Settings</h1>
+    <a href="../popup/popup.html" class="btn">Back to Popup</a>
+  </header>
+
+  <div class="container">
+    <div class="success-message" id="success-message"></div>
+    <div class="error-message" id="error-message"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="profiles">Billing Profiles</div>
+      <div class="tab" data-tab="settings">General Settings</div>
+      <div class="tab" data-tab="import-export">Import/Export</div>
+      <div class="tab" data-tab="about">About</div>
+    </div>
+
+    <!-- Billing Profiles Tab -->
+    <div class="tab-content active" id="profiles-tab">
+      <div class="info-banner">
+        <p>This bot is built to work hand-in-hand with a Discord monitor, allowing for the fastest possible checkout experience.</p>
+        <p>To get access to a compatible monitor, join our Discord community: <a href="https://discord.gg/EnC22ZvR45" target="_blank">Click here to join</a> (Link: https://discord.gg/EnC22ZvR45)</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span>Your Saved Billing Profiles</span>
+          <button class="btn" id="add-profile-btn">Add New Profile</button>
+        </div>
+        <div class="card-body">
+          <ul class="profile-list" id="profile-list">
+            <li class="empty-state">Loading profiles...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- General Settings Tab -->
+    <div class="tab-content" id="settings-tab">
+      <div class="info-banner">
+        <p>This bot is built to work hand-in-hand with a Discord monitor, allowing for the fastest possible checkout experience.</p>
+        <p>To get access to a compatible monitor, join our Discord community: <a href="https://discord.gg/EnC22ZvR45" target="_blank">Click here to join</a> (Link: https://discord.gg/EnC22ZvR45)</p>
+      </div>
+      <div class="card">
+        <div class="card-header">Global Settings</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="remember-toggle">
+              Remember extension state (ON/OFF) between browser sessions
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="auto-submit-order">
+              Automatically complete order (if unchecked, will stop before final submission)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="fast-mode" checked>
+              Enable Fast Mode (use minimal delays for faster checkout)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="add-random-delays">
+              Add random delays between actions (not recommended)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="debug-mode">
+              Enable Debug Mode (logs additional information to console)
+            </label>
+          </div>
+          
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+          <h4>Discord Monitor Cooldowns</h4>
+          
+          <div class="form-group">
+            <label for="global-cooldown">Global Cooldown (seconds between any tab opens)</label>
+            <input type="number" id="global-cooldown" min="1" max="300" step="1" value="5" style="width: 80px;">
+            <small style="color: #666; margin-left: 10px;">Prevents multiple tabs from opening too quickly</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="sku-cooldown">Duplicate SKU Cooldown (seconds between same product links)</label>
+            <input type="number" id="sku-cooldown" min="1" max="3600" step="1" value="10" style="width: 80px;">
+            <small style="color: #666; margin-left: 10px;">Prevents duplicate tabs for the same product</small>
+          </div>
+          
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+          <h4>Target Account Credentials</h4>
+          <p style="margin-bottom: 16px; padding: 12px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; color: #856404;">
+            <strong>Auto-Login:</strong> Enter your Target account credentials below to enable automatic login during checkout. Your credentials are stored securely in your browser and never transmitted externally.
+          </p>
+          
+          <div class="form-group">
+            <label for="target-email">Target Email/Username</label>
+            <input type="email" id="target-email" placeholder="your.email@example.com" style="width: 300px;">
+          </div>
+          
+          <div class="form-group">
+            <label for="target-password">Target Password</label>
+            <input type="password" id="target-password" placeholder="Enter your Target password" style="width: 300px;">
+          </div>
+          
+          <div class="form-group">
+            <button class="btn btn-secondary" id="clear-credentials-btn">Clear Credentials</button>
+            <small style="color: #666; margin-left: 10px;">Remove saved Target credentials</small>
+          </div>
+          
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+          <h4>Scheduled Pre-Login</h4>
+          <p style="margin-bottom: 16px; padding: 12px; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px; color: #0d47a1;">
+            <strong>Pre-emptive Login:</strong> Schedule times to automatically log in to Target before high-demand drops. This ensures your session is active when items become available, eliminating login delays during checkout.
+          </p>
+          
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="scheduled-login-enabled">
+              Enable Scheduled Pre-Login
+            </label>
+          </div>
+          
+          <div class="form-group">
+            <label for="scheduled-login-times">Login Times (24-hour format, comma-separated)</label>
+            <input type="text" id="scheduled-login-times" placeholder="02:45, 04:00, 18:30" style="width: 400px;">
+            <small style="color: #666; display: block; margin-top: 4px;">Example: 02:45, 04:00, 18:30 (for 2:45 AM, 4:00 AM, 6:30 PM)</small>
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="scheduled-login-daily">
+              Repeat daily
+            </label>
+            <small style="color: #666; margin-left: 10px;">Automatically schedule logins every day at the specified times</small>
+          </div>
+          
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+          
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="random-login-enabled">
+              Enable Random Hourly Pre-Login
+            </label>
+            <small style="color: #666; display: block; margin-left: 24px; margin-top: 4px;">Login once per hour at a random minute (0-59) to avoid looking suspicious</small>
+          </div>
+          
+          <div class="form-group" style="padding: 12px; background-color: #f5f5f5; border-radius: 4px;">
+            <strong>Scheduled login times:</strong> <span id="next-login-display" style="color: #2196F3;">Not scheduled</span>
+          </div>
+          
+          <button class="btn" id="save-settings-btn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import/Export Tab -->
+    <div class="tab-content" id="import-export-tab">
+      <div class="info-banner">
+        <p>This bot is built to work hand-in-hand with a Discord monitor, allowing for the fastest possible checkout experience.</p>
+        <p>To get access to a compatible monitor, join our Discord community: <a href="https://discord.gg/EnC22ZvR45" target="_blank">Click here to join</a> (Link: https://discord.gg/EnC22ZvR45)</p>
+      </div>
+      <div class="card">
+        <div class="card-header">Import/Export Profiles</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="export-data">Export Profiles (copy this text)</label>
+            <textarea id="export-data" readonly></textarea>
+          </div>
+          <button class="btn" id="copy-export-btn">Copy to Clipboard</button>
+
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+          <div class="form-group">
+            <label for="import-data">Import Profiles (paste JSON below)</label>
+            <textarea id="import-data" placeholder='Paste JSON data here...'></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="replace-existing">
+              Replace all existing profiles (if unchecked, will merge)
+            </label>
+          </div>
+          <button class="btn" id="import-btn">Import Profiles</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- About Tab -->
+    <div class="tab-content" id="about-tab">
+      <div class="info-banner">
+        <p>This bot is built to work hand-in-hand with a Discord monitor, allowing for the fastest possible checkout experience.</p>
+        <p>To get access to a compatible monitor, join our Discord community: <a href="https://discord.gg/EnC22ZvR45" target="_blank">Click here to join</a> (Link: https://discord.gg/EnC22ZvR45)</p>
+      </div>
+      <div class="card">
+        <div class="card-header">About Polar Assist Bot v3.5</div>
+        <div class="card-body">
+          <p>This bot was made by yours truly, Botter Boy Nova: <a href="https://www.youtube.com/botterboynova" target="_blank">https://www.youtube.com/botterboynova</a></p>
+          <p>Guide on how to get Pokemon cards for retail: <a href="https://youtu.be/0MYkaqpK8Zc" target="_blank">https://youtu.be/0MYkaqpK8Zc</a></p>
+          <p>Join our free discord community! <a href="https://discord.gg/EnC22ZvR45" target="_blank">https://discord.gg/EnC22ZvR45</a></p>
+          <p>Join our paid discord community! <a href="https://whop.com/polarchefs/" target="_blank">https://whop.com/polarchefs/</a></p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+          <h4>Disclaimer</h4>
+          <p>This bot is fully automated and designed for speed — once triggered, it will attempt to check out items as quickly as possible. By using this bot, you acknowledge that you are fully responsible for any purchases made, including accidental or unintended checkouts. All billing and shipping information is stored locally in your browser, and is never transmitted to us or stored externally.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Profile Modal -->
+  <div class="modal" id="profile-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-title">Add New Profile</span>
+        <span class="close" id="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="profile-form">
+          <input type="hidden" id="profile-id">
+          <div class="form-group">
+            <label for="profile-name">Profile Name</label>
+            <input type="text" id="profile-name" placeholder="e.g., My Default Profile" required>
+          </div>
+
+          <div class="form-group">
+            <p style="margin-bottom: 16px; padding: 12px; background-color: #f0f8ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+              <strong>Note:</strong> Address and email information will be taken directly from your Target account. Only payment information is required here.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <h3>Payment Information</h3>
+            <div class="form-group">
+              <label for="card-number">Card Number</label>
+              <input type="text" id="card-number" inputmode="numeric" pattern="[0-9\s]{13,19}" autocomplete="cc-number" maxlength="19" placeholder="xxxx xxxx xxxx xxxx" required>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label for="expiry-month">Expiry Month</label>
+                 <input type="text" id="expiry-month" inputmode="numeric" pattern="(0[1-9]|1[0-2])" maxlength="2" placeholder="MM" required>
+              </div>
+              <div class="form-col">
+                <label for="expiry-year">Expiry Year</label>
+                 <input type="text" id="expiry-year" inputmode="numeric" pattern="(20)\d{2}" maxlength="4" placeholder="YYYY" required>
+              </div>
+              <div class="form-col">
+                <label for="cvv">CVV</label>
+                <input type="text" id="cvv" inputmode="numeric" pattern="\d{3,4}" maxlength="4" placeholder="123" required>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-profile">Cancel</button>
+        <button class="btn" id="save-profile">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOVED type="module" -->
+  <script src="options.js"></script>
+</body>
+</html>
