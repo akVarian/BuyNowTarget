@@ -378,6 +378,9 @@ const loginPageSelectors = {
       'input[aria-label*="password"]'
     ],
     keepMeSignedIn: [
+      'input.styles_ndsBaseCheckbox__JqdNw#keepMeSignedIn[type="checkbox"]',
+      'input.styles_ndsBaseCheckbox__JqdNw[name="keepMeSignedIn"]',
+      'input.styles_ndsBaseCheckbox__JqdNw[type="checkbox"]',
       '#keepMeSignedIn',
       '[name="keepMeSignedIn"]',
       '[data-test="keepMeSignedIn"]',
@@ -422,6 +425,8 @@ const loginPageSelectors = {
         'input[type="password"]'
       ],
       keepMeSignedIn: [
+        'input.styles_ndsBaseCheckbox__JqdNw#keepMeSignedIn[type="checkbox"]',
+        'input.styles_ndsBaseCheckbox__JqdNw[name="keepMeSignedIn"]',
         '#keepMeSignedIn',
         '[name="keepMeSignedIn"]',
         'input[type="checkbox"].styles_ndsBaseCheckbox__7ay8D'

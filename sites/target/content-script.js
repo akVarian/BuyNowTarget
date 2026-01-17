@@ -2113,20 +2113,34 @@ if (window.location.pathname === "/cart") {
             utils.updateStatus("Preparing login...", "status-running");
             
             // Check "Keep me signed in" checkbox if present - using multiple detection methods
-            let keepSignedInCheckbox = document.querySelector('#keepMeSignedIn');
+            // Try specific Target.com checkbox selectors first
+            let keepSignedInCheckbox = document.querySelector('input.styles_ndsBaseCheckbox__JqdNw#keepMeSignedIn[type="checkbox"]');
             
-            // If not found by ID, try other common selectors
+            // If not found, try by ID
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('#keepMeSignedIn');
+            }
+            
+            // If not found by ID, try by name
             if (!keepSignedInCheckbox) {
               keepSignedInCheckbox = document.querySelector('[name="keepMeSignedIn"]');
             }
+            
+            // Try by class name (Target-specific)
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('input.styles_ndsBaseCheckbox__JqdNw[type="checkbox"]');
+            }
+            
+            // Try generic checkbox selectors
             if (!keepSignedInCheckbox) {
               keepSignedInCheckbox = document.querySelector('input[type="checkbox"][id*="keep"]');
             }
             if (!keepSignedInCheckbox) {
               keepSignedInCheckbox = document.querySelector('input[type="checkbox"][name*="remember"]');
             }
+            
+            // Last resort: search by label text
             if (!keepSignedInCheckbox) {
-              // Try to find any checkbox on the page that might be the "keep me signed in" checkbox
               const checkboxes = document.querySelectorAll('input[type="checkbox"]');
               for (const cb of checkboxes) {
                 const label = cb.parentElement?.textContent || cb.getAttribute('aria-label') || '';
