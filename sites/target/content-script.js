@@ -2137,11 +2137,18 @@ if (window.location.pathname === "/cart") {
             
             // Verify email was filled
             if (emailField.value.trim() === _0x24b902) {
-              console.log("✓ Email field successfully filled with: " + _0x24b902);
+              console.log("✓ Email field successfully filled");
             } else {
               console.warn("Email field verification failed, retrying...");
               await utils.fillField(emailField, _0x24b902, "login-email-step1-retry");
               await utils.sleep(100);
+              
+              // Verify retry was successful
+              if (emailField.value.trim() === _0x24b902) {
+                console.log("✓ Email field successfully filled after retry");
+              } else {
+                console.error("✗ Email field failed to fill after retry - login may fail");
+              }
             }
             
             // Click continue
