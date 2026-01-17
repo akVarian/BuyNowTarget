@@ -2084,10 +2084,29 @@ if (window.location.pathname === "/cart") {
                              document.querySelector('input[type="email"]') || 
                              document.querySelector('input[name="username"]');
           
-          // Look for continue button (Step 1)
-          const continueButton = Array.from(document.querySelectorAll('button')).find(btn => 
-            btn.textContent.includes('Sign in') || btn.textContent.includes('Continue')
-          );
+          // Look for continue button (Step 1) - be more flexible with button text
+          // Try specific Target.com button selectors first
+          let continueButton = document.querySelector('button#login[type="submit"]');
+          
+          // Try by class pattern (Target-specific)
+          if (!continueButton) {
+            continueButton = document.querySelector('button.styles_ndsButton__XOOOH[type="submit"]');
+          }
+          
+          // Try generic submit button
+          if (!continueButton) {
+            continueButton = document.querySelector('button[type="submit"]');
+          }
+          
+          // Try by text content and aria-label
+          if (!continueButton) {
+            continueButton = Array.from(document.querySelectorAll('button')).find(btn => {
+              const text = btn.textContent.trim().toLowerCase();
+              const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+              return text.includes('sign in') || text.includes('continue') || 
+                     ariaLabel.includes('sign in') || ariaLabel.includes('continue');
+            });
+          }
           
           // Look for password field
           const passwordField = document.querySelector('#password') || 
@@ -2104,11 +2123,58 @@ if (window.location.pathname === "/cart") {
             console.log("Step 1: Checking 'Keep me signed in', entering email, and clicking continue");
             utils.updateStatus("Preparing login...", "status-running");
             
-            // Check "Keep me signed in" checkbox if present (using proper selectors)
-            const keepSignedInCheckbox = finder.findElementWithSelectors(selectors.loginPageSelectors.loginFields.keepMeSignedIn);
-            if (keepSignedInCheckbox && finder.isElementVisible(keepSignedInCheckbox)) {
+            // Check "Keep me signed in" checkbox if present - using multiple detection methods
+            // Try specific Target.com checkbox selectors first
+            let keepSignedInCheckbox = document.querySelector('input.styles_ndsBaseCheckbox__JqdNw#keepMeSignedIn[type="checkbox"]');
+            
+            // If not found, try by ID
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('#keepMeSignedIn');
+            }
+            
+            // If not found by ID, try by name
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('[name="keepMeSignedIn"]');
+            }
+            
+            // Try by class name (Target-specific)
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('input.styles_ndsBaseCheckbox__JqdNw[type="checkbox"]');
+            }
+            
+            // Try generic checkbox selectors
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('input[type="checkbox"][id*="keep"]');
+            }
+            if (!keepSignedInCheckbox) {
+              keepSignedInCheckbox = document.querySelector('input[type="checkbox"][name*="remember"]');
+            }
+            
+            // Last resort: search by label text (limit to first 10 checkboxes for performance)
+            if (!keepSignedInCheckbox) {
+              const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]')).slice(0, 10);
+              for (const cb of checkboxes) {
+                const label = cb.parentElement?.textContent || cb.getAttribute('aria-label') || '';
+                if (label.toLowerCase().includes('keep') || label.toLowerCase().includes('remember')) {
+                  keepSignedInCheckbox = cb;
+                  console.log('Found "Keep me signed in" checkbox via label search:', label);
+                  break;
+                }
+              }
+            }
+            
+            if (keepSignedInCheckbox) {
+              console.log('Found "Keep me signed in" checkbox:', keepSignedInCheckbox.id || keepSignedInCheckbox.name || 'no id/name');
+              
+              // Check if visible (it might be visually hidden but still functional)
+              const isVisible = keepSignedInCheckbox.offsetParent !== null || 
+                               window.getComputedStyle(keepSignedInCheckbox).display !== 'none';
+              console.log('Checkbox visible:', isVisible, 'Checked:', keepSignedInCheckbox.checked);
+              
               if (!keepSignedInCheckbox.checked) {
                 console.log("Checking 'Keep me signed in' checkbox (CRITICAL for session persistence)");
+                
+                // Try multiple methods to check the checkbox
                 keepSignedInCheckbox.checked = true;
                 keepSignedInCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
                 keepSignedInCheckbox.dispatchEvent(new Event("click", { bubbles: true }));
@@ -2118,15 +2184,36 @@ if (window.location.pathname === "/cart") {
                 if (keepSignedInCheckbox.checked) {
                   console.log("✓ Keep me signed in checkbox successfully checked");
                 } else {
-                  console.warn("✗ Keep me signed in checkbox failed to check - retrying...");
-                  await utils.clickElement(keepSignedInCheckbox, "keep-signed-in-retry");
-                  await utils.sleep(50);
-                  
-                  // Verify retry was successful
-                  if (keepSignedInCheckbox.checked) {
-                    console.log("✓ Keep me signed in checkbox checked after retry");
-                  } else {
-                    console.error("✗ Keep me signed in checkbox failed after retry - session may not persist");
+                  console.warn("✗ Keep me signed in checkbox failed to check - trying click method...");
+                  // Try clicking the checkbox element or its label
+                  try {
+                    keepSignedInCheckbox.click();
+                    await utils.sleep(50);
+                    if (keepSignedInCheckbox.checked) {
+                      console.log("✓ Keep me signed in checkbox checked after click");
+                    } else {
+                      // Try clicking the parent label if exists (only if checkbox has an id)
+                      if (keepSignedInCheckbox.id) {
+                        const label = keepSignedInCheckbox.closest('label') || 
+                                     document.querySelector(`label[for="${keepSignedInCheckbox.id}"]`);
+                        if (label) {
+                          console.log("Trying to click checkbox label...");
+                          label.click();
+                          await utils.sleep(50);
+                          if (keepSignedInCheckbox.checked) {
+                            console.log("✓ Keep me signed in checkbox checked after label click");
+                          } else {
+                            console.error("✗ Keep me signed in checkbox failed all attempts - session may not persist");
+                          }
+                        } else {
+                          console.error("✗ Keep me signed in checkbox failed after retry - session may not persist");
+                        }
+                      } else {
+                        console.error("✗ Keep me signed in checkbox has no id, cannot find label - session may not persist");
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Error clicking checkbox:", e);
                   }
                 }
               } else {
@@ -2134,6 +2221,7 @@ if (window.location.pathname === "/cart") {
               }
             } else {
               console.warn("Keep me signed in checkbox not found in Step 1 - session may not persist");
+              console.warn("Available checkboxes on page:", document.querySelectorAll('input[type="checkbox"]').length);
             }
             
             // Fill email
@@ -2159,9 +2247,57 @@ if (window.location.pathname === "/cart") {
             }
             
             // Click continue
+            if (!continueButton) {
+              console.error("✗ Continue button not found! Cannot proceed to password entry.");
+              console.log("Available buttons on page:", Array.from(document.querySelectorAll('button')).map(b => b.textContent.trim()));
+              utils.updateStatus("Continue button not found", "status-waiting");
+              return;
+            }
+            
+            console.log("Found continue button:", continueButton.textContent.trim());
+            console.log("Continue button visible:", continueButton.offsetParent !== null);
+            console.log("Continue button disabled:", continueButton.disabled);
+            
+            if (continueButton.disabled) {
+              console.warn("Continue button is disabled - waiting for it to enable...");
+              utils.updateStatus("Waiting for continue button...", "status-running");
+              
+              // Wait up to 3 seconds for button to enable
+              const MAX_BUTTON_ENABLE_WAIT_ATTEMPTS = 10;
+              const BUTTON_ENABLE_WAIT_INTERVAL_MS = 300;
+              let enableWaitAttempts = 0;
+              while (continueButton.disabled && enableWaitAttempts < MAX_BUTTON_ENABLE_WAIT_ATTEMPTS) {
+                await utils.sleep(BUTTON_ENABLE_WAIT_INTERVAL_MS);
+                enableWaitAttempts++;
+              }
+              
+              if (continueButton.disabled) {
+                console.error("✗ Continue button still disabled after waiting - login may fail");
+                utils.updateStatus("Continue button disabled", "status-waiting");
+                return;
+              }
+              console.log("✓ Continue button enabled");
+            }
+            
             console.log("Clicking continue button to proceed to password entry");
             utils.updateStatus("Clicking continue...", "status-running");
-            await utils.clickElement(continueButton, "login-continue");
+            const clickResult = await utils.clickElement(continueButton, "login-continue");
+            console.log("Continue button click result:", clickResult);
+            
+            if (!clickResult) {
+              console.error("✗ Failed to click continue button - trying direct click...");
+              try {
+                continueButton.click();
+                console.log("✓ Continue button clicked via direct click");
+              } catch (e) {
+                console.error("✗ Direct click also failed:", e);
+                utils.updateStatus("Failed to click continue", "status-waiting");
+                return;
+              }
+            } else {
+              console.log("✓ Continue button clicked successfully");
+            }
+            
             utils.updateStatus("Waiting for password field...", "status-running");
             
             // Wait for password field to appear
