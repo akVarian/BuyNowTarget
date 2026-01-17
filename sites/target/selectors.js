@@ -391,6 +391,8 @@ const loginPageSelectors = {
     ]
   },
   signInButton: [
+    'button#login[type="submit"]',
+    'button.styles_ndsButton__XOOOH[type="submit"]',
     '#login',
     'button#login',
     '[data-test="accountNav-signIn"]',
@@ -433,6 +435,8 @@ const loginPageSelectors = {
       ]
     },
     signInButton: [
+      'button#login[type="submit"]',
+      'button.styles_ndsButton__XOOOH[type="submit"]',
       '#login',
       'button#login',
       'button[type="submit"]',

@@ -2085,16 +2085,27 @@ if (window.location.pathname === "/cart") {
                              document.querySelector('input[name="username"]');
           
           // Look for continue button (Step 1) - be more flexible with button text
-          let continueButton = Array.from(document.querySelectorAll('button')).find(btn => {
-            const text = btn.textContent.trim().toLowerCase();
-            const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
-            return text.includes('sign in') || text.includes('continue') || 
-                   ariaLabel.includes('sign in') || ariaLabel.includes('continue');
-          });
+          // Try specific Target.com button selectors first
+          let continueButton = document.querySelector('button#login[type="submit"]');
           
-          // If not found, look for submit button as fallback
+          // Try by class pattern (Target-specific)
+          if (!continueButton) {
+            continueButton = document.querySelector('button.styles_ndsButton__XOOOH[type="submit"]');
+          }
+          
+          // Try generic submit button
           if (!continueButton) {
             continueButton = document.querySelector('button[type="submit"]');
+          }
+          
+          // Try by text content and aria-label
+          if (!continueButton) {
+            continueButton = Array.from(document.querySelectorAll('button')).find(btn => {
+              const text = btn.textContent.trim().toLowerCase();
+              const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+              return text.includes('sign in') || text.includes('continue') || 
+                     ariaLabel.includes('sign in') || ariaLabel.includes('continue');
+            });
           }
           
           // Look for password field
