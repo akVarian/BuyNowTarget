@@ -2150,9 +2150,9 @@ if (window.location.pathname === "/cart") {
               keepSignedInCheckbox = document.querySelector('input[type="checkbox"][name*="remember"]');
             }
             
-            // Last resort: search by label text
+            // Last resort: search by label text (limit to first 10 checkboxes for performance)
             if (!keepSignedInCheckbox) {
-              const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+              const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]')).slice(0, 10);
               for (const cb of checkboxes) {
                 const label = cb.parentElement?.textContent || cb.getAttribute('aria-label') || '';
                 if (label.toLowerCase().includes('keep') || label.toLowerCase().includes('remember')) {
@@ -2192,20 +2192,24 @@ if (window.location.pathname === "/cart") {
                     if (keepSignedInCheckbox.checked) {
                       console.log("✓ Keep me signed in checkbox checked after click");
                     } else {
-                      // Try clicking the parent label if exists
-                      const label = keepSignedInCheckbox.closest('label') || 
-                                   document.querySelector(`label[for="${keepSignedInCheckbox.id}"]`);
-                      if (label) {
-                        console.log("Trying to click checkbox label...");
-                        label.click();
-                        await utils.sleep(50);
-                        if (keepSignedInCheckbox.checked) {
-                          console.log("✓ Keep me signed in checkbox checked after label click");
+                      // Try clicking the parent label if exists (only if checkbox has an id)
+                      if (keepSignedInCheckbox.id) {
+                        const label = keepSignedInCheckbox.closest('label') || 
+                                     document.querySelector(`label[for="${keepSignedInCheckbox.id}"]`);
+                        if (label) {
+                          console.log("Trying to click checkbox label...");
+                          label.click();
+                          await utils.sleep(50);
+                          if (keepSignedInCheckbox.checked) {
+                            console.log("✓ Keep me signed in checkbox checked after label click");
+                          } else {
+                            console.error("✗ Keep me signed in checkbox failed all attempts - session may not persist");
+                          }
                         } else {
-                          console.error("✗ Keep me signed in checkbox failed all attempts - session may not persist");
+                          console.error("✗ Keep me signed in checkbox failed after retry - session may not persist");
                         }
                       } else {
-                        console.error("✗ Keep me signed in checkbox failed after retry - session may not persist");
+                        console.error("✗ Keep me signed in checkbox has no id, cannot find label - session may not persist");
                       }
                     }
                   } catch (e) {
@@ -2259,10 +2263,11 @@ if (window.location.pathname === "/cart") {
               utils.updateStatus("Waiting for continue button...", "status-running");
               
               // Wait up to 3 seconds for button to enable
+              const MAX_BUTTON_ENABLE_WAIT_ATTEMPTS = 10;
+              const BUTTON_ENABLE_WAIT_INTERVAL_MS = 300;
               let enableWaitAttempts = 0;
-              const maxEnableWaitAttempts = 10;
-              while (continueButton.disabled && enableWaitAttempts < maxEnableWaitAttempts) {
-                await utils.sleep(300);
+              while (continueButton.disabled && enableWaitAttempts < MAX_BUTTON_ENABLE_WAIT_ATTEMPTS) {
+                await utils.sleep(BUTTON_ENABLE_WAIT_INTERVAL_MS);
                 enableWaitAttempts++;
               }
               
